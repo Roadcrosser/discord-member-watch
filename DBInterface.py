@@ -17,6 +17,7 @@ class DBInterface:
                     guild_id INTEGER,
                     requester_id INTEGER,
                     channel_id INTEGER,
+                    message_id INTEGER,
                     PRIMARY KEY (user_id, guild_id, requester_id)                 
                 );
                 """
@@ -55,30 +56,35 @@ class DBInterface:
 
         return ret
 
-    async def insert_alert_request(self, user_id, guild_id, requester_id, channel_id):
+    async def insert_alert_request(
+        self, user_id, guild_id, requester_id, channel_id, message_id
+    ):
         async with self.conn() as db:
             await db.execute(
                 """
-                INSERT INTO alert_requests(user_id, guild_id, requester_id, channel_id) VALUES (?, ?, ?, ?);
+                INSERT INTO alert_requests(user_id, guild_id, requester_id, channel_id, message_id) VALUES (?, ?, ?, ?, ?);
                 """,
-                (user_id, guild_id, requester_id, channel_id),
+                (user_id, guild_id, requester_id, channel_id, message_id),
             )
             await db.commit()
 
-    async def update_alert_request(self, user_id, guild_id, requester_id, channel_id):
+    async def update_alert_request(
+        self, user_id, guild_id, requester_id, channel_id, message_id
+    ):
         async with self.conn() as db:
             await db.execute(
                 """
                 UPDATE
                     alert_requests
                 SET
-                    channel_id = ?
+                    channel_id = ?,
+                    message_id = ?
                 WHERE
                     user_id = ? AND
                     guild_id = ? AND
                     requester_id = ?
                 """,
-                (user_id, guild_id, requester_id, channel_id),
+                (channel_id, message_id, user_id, guild_id, requester_id),
             )
             await db.commit()
 

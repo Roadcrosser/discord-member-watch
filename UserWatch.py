@@ -17,7 +17,9 @@ class UserWatch:
 
         for a in watch_data["alert_requests"]:
 
-            self._add_alert_request(a.user_id, a.guild_id, a.requester_id, a.channel_id)
+            self._add_alert_request(
+                a.user_id, a.guild_id, a.requester_id, a.channel_id, a.message_id
+            )
 
             alerts_initialized += 1
 
@@ -41,23 +43,30 @@ class UserWatch:
     def get_guild_subscription_channel(self, guild_id):
         return self.guild_subscription_channels.get(guild_id, None)
 
-    def _add_alert_request(self, user_id, guild_id, requester_id, channel_id):
+    def _add_alert_request(
+        self, user_id, guild_id, requester_id, channel_id, message_id
+    ):
         user_guild_pair = (user_id, guild_id)
 
         if not user_guild_pair in self.alert_requests:
             self.alert_requests[user_guild_pair] = {}
 
-        self.alert_requests[user_guild_pair][requester_id] = channel_id
+        self.alert_requests[user_guild_pair][requester_id] = (channel_id, message_id)
 
-    async def add_alert_request(self, user_id, guild_id, requester_id, channel_id):
-        row = (user_id, guild_id, requester_id, channel_id)
+    async def add_alert_request(
+        self, user_id, guild_id, requester_id, channel_id, message_id
+    ):
+        row = (user_id, guild_id, requester_id, channel_id, message_id)
         user_guild_pair = (user_id, guild_id)
 
         prev_channel = self.alert_requests.get(user_guild_pair, {}).get(
-            requester_id, None
-        )
+            requester_id, [None]
+        )[0]
         if prev_channel:
-            self.alert_requests[user_guild_pair][requester_id] = channel_id
+            self.alert_requests[user_guild_pair][requester_id] = (
+                channel_id,
+                message_id,
+            )
             await self.db.update_alert_request(*row)
 
             return CommandResponse(OperationStatus.UPDATED, prev_channel)
@@ -126,17 +135,18 @@ class UserWatch:
         alerts_to_send = []
         if alert_requests:
             raw_alerts = {}
-            for u, c in alert_requests.items():
+            for u, (c, m) in alert_requests.items():
                 if not c in raw_alerts:
-                    raw_alerts[c] = set()
+                    raw_alerts[c] = {}
 
-                raw_alerts[c].add(u)
+                raw_alerts[c][u] = m
 
             for c in raw_alerts:
                 channel = guild.get_channel(c)
                 if not util.channel_accessible(channel):
                     continue
                 users = []
+                message_ids = []
                 for u in raw_alerts[c]:
                     member = guild.get_member(u)
                     if not member:
@@ -144,9 +154,10 @@ class UserWatch:
                     if not channel.permissions_for(member).read_messages:
                         continue
                     users.append(member)
+                    message_ids.append(raw_alerts[c][u])
 
                 if users:
-                    alerts_to_send.append((channel, users))
+                    alerts_to_send.append((channel, users, message_ids))
 
         subscription_channel = None
         if user_guild_pair in self.subscriptions:
@@ -161,8 +172,12 @@ class UserWatch:
         if subscription_channel:
             await subscription_channel.send(embed=embed)
 
-        for c, u in alerts_to_send:
-            await c.send(" ".join(f"<@{d.id}>" for d in u), embed=embed)
+        for c, u, m in alerts_to_send:
+            await c.send(
+                " ".join(f"<@{d.id}>" for d in u),
+                embed=embed,
+                view=util.build_jump_view(guild, c, m),
+            )
 
         for u in list(alert_requests.keys()):
             await self.remove_alert_request(*user_guild_pair, u)

@@ -65,6 +65,21 @@ def textify_embed(embed, limit=40, padding=0, pad_first_line=True):
     return ret
 
 
+def build_jump_view(guild, channel, message_ids):
+    view = discord.ui.View()
+
+    for m in message_ids:
+        if m:
+            view.add_item(
+                discord.ui.Button(
+                    label="\u200b",
+                    url=f"https://discord.com/channels/{guild.id}/{channel.id}/{m}",
+                )
+            )
+
+    return view
+
+
 def build_message_embed(message):
     embed = (
         discord.Embed(

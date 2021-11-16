@@ -18,11 +18,12 @@ class CommandResponse:
 
 
 class AlertRequest:
-    def __init__(self, user_id, guild_id, requester_id, channel_id):
+    def __init__(self, user_id, guild_id, requester_id, channel_id, message_id):
         self.user_id = user_id
         self.guild_id = guild_id
         self.requester_id = requester_id
         self.channel_id = channel_id
+        self.message_id = message_id
 
 
 # You have to wonder if these two dataclasses are even needed if we're passing them from a tuple directly back to a tuple

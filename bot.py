@@ -104,7 +104,7 @@ async def add_alert(
     u = user_search.data
 
     res = await bot.userwatch.add_alert_request(
-        u.id, ctx.guild.id, ctx.author.id, ctx.channel.id
+        u.id, ctx.guild.id, ctx.author.id, ctx.channel.id, ctx.id
     )
 
     response = f"Alright, I will notify you here {{}}the next time I see <@{u.id}> say something."
