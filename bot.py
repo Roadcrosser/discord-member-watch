@@ -17,7 +17,7 @@ try:
 except ImportError:
     from yaml import Loader
 
-with open("config.yaml", "r") as o:
+with open("config.yml", "r") as o:
     config = load(o.read(), Loader=Loader)
 
 
