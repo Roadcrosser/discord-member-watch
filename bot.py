@@ -231,11 +231,11 @@ async def set_subscription_channel(
 
     res = await bot.userwatch.set_guild_subscription_channel(ctx.guild.id, channel.id)
 
-    response = f"Alright, I will now forward messages from subscribed users to <#{ctx.channel.id}>{{}}."
+    response = f"Alright, I will now forward messages from subscribed users to <#{channel.id}>{{}}."
     previous_channel_msg = ""
 
     if res.status == OperationStatus.UPDATED:
-        if res.data == ctx.channel.id:
+        if res.data == channel.id:
             response = (
                 f"{{}}I am already forwarding messages from subscribed users there."
             )
